@@ -1,12 +1,12 @@
 package final_task_a
 
-// https://contest.yandex.ru/contest/22781/run-report/142305517/
+// https://contest.yandex.ru/contest/22781/run-report/142766756/
 /*
 -- ПРИНЦИП РАБОТЫ --
     Я реализовал Дек на кольцевом буфере. В качестве буфера используется массив фиксированного размера.
-    Указатели head и tail указывают на начало и конец дека. Добавление в начало происходит по указателю
-    head, с его последующим сдвигом по кольцевому буферу против часовой стрелки. Добавление в конец
-    происходит по указателю tail, с его последующим сдвигом по кольцевому буферу по часовой стрелке.
+    Указатель head указывает на начало дека, а tail на индекс следующий за последним элементом. Добавление
+    в начало происходит по указателю head, сдвинутому по кольцевому буферу против часовой стрелки.
+    Добавление в конец происходит по указателю tail, с его последующим сдвигом по кольцевому буферу по часовой стрелке.
     Извлечение элементов также происходит по соответствующим указателям со сдвигом в противоположную
     сторону.
 
@@ -47,35 +47,45 @@ import java.io.BufferedReader
 class Deque<T>(private val capacity: Int) {
     @Suppress("UNCHECKED_CAST")                                     // Я использовал примитивный массив для своей структуры данных согласно https://kotlinlang.org/docs/arrays.html#when-to-use-arrays
     private val queue = arrayOfNulls<Any?>(capacity) as Array<T?>
-    private var head = 0
-    private var tail = 0
-    private var size = 0
 
-    fun pushBack(x: T) {
+    var size = 0
+        private set
+
+    private var head = 0
+        set(value) {
+            field = (value % capacity + capacity) % capacity
+        }
+
+    private var tail = 0
+        set(value) {
+            field = (value % capacity + capacity) % capacity
+        }
+
+    fun pushBack(x: T): Boolean {
         if (size < capacity) {
             queue[tail] = x
-            tail = (tail + 1) % capacity
+            tail += 1
             size++
-        } else {
-            println("error")
+            return true
         }
+        return false
     }
 
-    fun pushFront(x: T) {
+    fun pushFront(x: T): Boolean {
         if (size < capacity) {
-            head = (head - 1 + capacity) % capacity
+            head -= 1
             queue[head] = x
             size++
-        } else {
-            println("error")
+            return true
         }
+        return false
     }
 
     fun popBack(): T? {
         if (size == 0) {
             return null
         } else {
-            tail = (tail - 1 + capacity) % capacity
+            tail -= 1
             val res = queue[tail]
             queue[tail] = null
             size--
@@ -89,7 +99,7 @@ class Deque<T>(private val capacity: Int) {
         } else {
             val res = queue[head]
             queue[head] = null
-            head = (head + 1) % capacity
+            head += 1
             size--
             return res
         }
@@ -101,22 +111,22 @@ fun processCommands(reader: BufferedReader, numOfCommands: Int, deq: Deque<Int>)
         val line = reader.readLine().trim().split(" ")
 
         when {
-            line[0] == "push_front" && line.size == 2 -> {
-                deq.pushFront(line[1].toInt())
+            line[0] == "push_front" -> {
+                if (!deq.pushFront(line[1].toInt())) { println("error") }
             }
 
-            line[0] == "push_back" && line.size == 2 -> {
-                deq.pushBack(line[1].toInt())
+            line[0] == "push_back" -> {
+                if (!deq.pushBack(line[1].toInt())) { println("error") }
             }
 
-            line[0] == "pop_front" && line.size == 1 -> {
+            line[0] == "pop_front" -> {
                 println(deq.popFront() ?: "error")
             }
 
-            line[0] == "pop_back" && line.size == 1 -> {
+            line[0] == "pop_back" -> {
                 println(deq.popBack() ?: "error")
             }
-            else -> println("unknown")
+            else -> error("unknown command")
         }
     }
 }

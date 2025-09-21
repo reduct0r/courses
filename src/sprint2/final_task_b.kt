@@ -22,7 +22,7 @@ package sprint2
 -- ВРЕМЕННАЯ СЛОЖНОСТЬ --
     Обработка каждого токена стоит O(1): push и pop для стека и вычисления - константны.
     Для n токенов общая сложность O(n) - проход по всем элементам. Т.к. стек основан на
-    Vector то амортизационная сложность O(1) из-за ресайза на токен/операцию стека или O(n) для всей функции.
+    List то амортизационная сложность O(1) из-за ресайза на токен/операцию стека или O(n) для всей функции.
 
 -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
     Если нужен стек с n элементами, то будет создан вектор длиной n.
@@ -30,37 +30,28 @@ package sprint2
     в среднем и худшем случае. В лучшем случае O(1) - стек содержит максимум 1 элемент.
 */
 
-import java.util.Stack
-import kotlin.math.floor
-
 fun solveExpression(str: List<String>): Int {
-    val stack = Stack<Int>()
+    val stack = ArrayDeque<Int>()
 
     for (el in str) {
-        when (el) {
-            "+" -> {
-                val buf = stack.pop()
-                stack.push(stack.pop() + buf)
+        val result = when (el) {
+            "+", "-", "*", "/" -> {
+                val b = stack.removeFirst()
+                val a = stack.removeFirst()
+                when (el) {
+                    "+" -> a + b
+                    "-" -> a - b
+                    "*" -> a * b
+                    "/" -> a.floorDiv(b)
+                    else -> error("Unknown operator: $el")
+                }
             }
-            "-" -> {
-                val buf = stack.pop()
-                stack.push(stack.pop() - buf)
-            }
-            "*" -> {
-                val buf = stack.pop()
-                stack.push(stack.pop() * buf)
-            }
-            "/" -> {
-                val buf = stack.pop()
-                stack.push(floor(stack.pop().toDouble() / buf.toDouble()).toInt())
-            }
-            else -> {
-                stack.push(el.toInt())
-            }
+            else -> el.toInt()
         }
+        stack.addFirst(result)
     }
 
-    return stack.pop()
+    return stack.removeFirst()
 }
 
 fun main() {
