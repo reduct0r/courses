@@ -12,6 +12,5 @@ class BankTest {
         val sender = User("", toTransfer)
         val recipient = User(phone, toTransfer)
         val bank = Bank(listOf(User("", 100), User("", 150)))
-        bank.tra
     }
 }
