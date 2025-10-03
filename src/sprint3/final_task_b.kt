@@ -28,6 +28,7 @@ package sprint3
     Дополнительная память O(log n) на стек рекурсии в среднем, O(n) в худшем.
     Нет амортизации, так как нет динамического выделения.
 */
+
 class Participant(
     val name: String = "",
     val completedTasks: Int = 0,
