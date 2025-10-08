@@ -1,6 +1,5 @@
-package sprint3
+// https://contest.yandex.ru/contest/23815/run-report/144253154/
 
-// https://contest.yandex.ru/contest/23815/run-report/143775664/
 /*
 -- ПРИНЦИП РАБОТЫ --
     Я реализовал in-place быструю сортировку.
@@ -38,59 +37,52 @@ class Participant(
 fun main() {
     val reader = System.`in`.bufferedReader()
     val n = reader.readLine().toInt()
-    val listOfParticipants = Array(n) { Participant() }
-
-    for (i in 0 until n) {
+    val listOfParticipants = Array(n) {
         val parts = reader.readLine().trim().split(" ")
-        listOfParticipants[i] = Participant(parts[0], parts[1].toInt(), parts[2].toInt())
+        val (name, tasks, fines) = parts
+        Participant(name, tasks.toInt(), fines.toInt())
     }
+    val participantComparator = compareByDescending<Participant> { it.completedTasks }
+        .thenBy { it.numOfFines }
+        .thenBy { it.name }
 
-    inPlaceQSort(listOfParticipants, 0, n - 1)
+    listOfParticipants.quickSort(participantComparator)
 
-    for (participant in listOfParticipants) {
-        println(participant.name)
+    println(listOfParticipants.joinToString("\n") { it.name })
+}
+
+private fun Array<Participant>.partition(left: Int, right: Int, comparator: Comparator<Participant>): Int {
+    val pivot = this[(left..right).random()]
+    var i = left - 1
+    var j = right + 1
+    while (true) {
+        do {
+            i++
+        } while (comparator.compare(this[i], pivot) < 0)
+
+        do {
+            j--
+        } while (comparator.compare(this[j], pivot) > 0)
+
+        if (i >= j) {
+            return j + 1
+        }
+
+        val temp = this[i]
+        this[i] = this[j]
+        this[j] = temp
     }
 }
 
-fun compareParticipants(a: Participant, b: Participant): Int {
-    return when {
-        a.completedTasks != b.completedTasks -> b.completedTasks.compareTo(a.completedTasks)
-        a.numOfFines != b.numOfFines -> a.numOfFines.compareTo(b.numOfFines)
-        else -> a.name.compareTo(b.name)
-    }
+fun Array<Participant>.quickSort(comparator: Comparator<Participant>) {
+    if (size <= 1) return
+    quickSort(0, size - 1, comparator)
 }
 
-fun partition(arr: Array<Participant>, left: Int, right: Int): Int {
-    val pivotValue = arr[(left..right).random()]
-    var leftPtr = left
-    var rightPtr = right
-
-    while (leftPtr <= rightPtr) {
-        while (leftPtr <= rightPtr && compareParticipants(arr[leftPtr], pivotValue) < 0) {
-            leftPtr++
-        }
-
-        while (leftPtr <= rightPtr && compareParticipants(arr[rightPtr], pivotValue) > 0) {
-            rightPtr--
-        }
-
-        if (leftPtr <= rightPtr) {
-            val temp = arr[leftPtr]
-            arr[leftPtr] = arr[rightPtr]
-            arr[rightPtr] = temp
-            leftPtr++
-            rightPtr--
-        }
-    }
-
-    return leftPtr
-}
-
-fun inPlaceQSort(arr: Array<Participant>, left: Int, right: Int): Array<Participant> {
+private fun Array<Participant>.quickSort(left: Int, right: Int, comparator: Comparator<Participant>) {
     if (left < right) {
-        val part = partition(arr, left, right)
-        inPlaceQSort(arr, left, part - 1)
-        inPlaceQSort(arr, part, right)
+        val part = partition(left, right, comparator)
+        quickSort(left, part - 1, comparator)
+        quickSort(part, right, comparator)
     }
-    return arr
 }

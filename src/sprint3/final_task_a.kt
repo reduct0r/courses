@@ -1,3 +1,5 @@
+// https://contest.yandex.ru/contest/23815/run-report/144253012/
+
 /*
 -- ПРИНЦИП РАБОТЫ --
     Я реализовал модифицированный бинарный поиск для поиска элемента в циклически сдвинутом отсортированном массиве.
@@ -50,7 +52,7 @@ object Solution {
                 }
             }
             else -> {
-                if (x > arr[mid] && x <= arr[right - 1]) {
+                if (x in (arr[mid] + 1)..arr[right - 1]) {
                     binarySearch(arr, x, mid + 1, right)
                 } else {
                     binarySearch(arr, x, left, mid)
