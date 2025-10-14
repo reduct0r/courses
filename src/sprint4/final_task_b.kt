@@ -27,53 +27,51 @@ package sprint4
     всего O(число ключей) <= O(10^5).
 */
 
-data class Pair(val key: Int, var value: Int)
+import java.util.LinkedList
 
-class HashTable(private val size: Int = 100003) {
-    private val table: Array<MutableList<Pair>?> = arrayOfNulls(size)
+data class Entry(val key: Int, var value: Int)
+
+class HashTable(private val capacity: Int = 142867) {
+    private val table: Array<LinkedList<Entry>> = Array(capacity) { LinkedList() }
 
     private fun hash(key: Int): Int {
-        return ((key.toLong() % size + size) % size).toInt()
+        return key.mod(capacity)
     }
 
     fun put(key: Int, value: Int) {
         val h = hash(key)
-        if (table[h] == null) {
-            table[h] = mutableListOf()
-        }
-        val bucket = table[h]!!
+        val bucket = table[h]
 
-        for (pair in bucket) {
-            if (pair.key == key) {
-                pair.value = value
-                return
-            }
+        val entry = bucket.find { it.key == key }
+        if (entry != null) {
+            entry.value = value
+        } else {
+            bucket.add(Entry(key, value))
         }
-        bucket.add(Pair(key, value))
     }
 
-    fun get(key: Int): Int? {
+    operator fun get(key: Int): Int? {
         val h = hash(key)
-        val bucket = table[h] ?: return null
-        for (entry in bucket) {
+        val bucket = table[h]
+        return bucket.find { it.key == key }?.value
+    }
+
+    fun delete(key: Int): Int? {
+        val h = hash(key)
+        val bucket = table[h]
+        val it = bucket.listIterator()
+        while (it.hasNext()) {
+            val entry = it.next()
             if (entry.key == key) {
+                it.remove()
                 return entry.value
             }
         }
         return null
     }
 
-    fun delete(key: Int): Int? {
-        val h = hash(key)
-        val bucket = table[h] ?: return null
-        for (i in bucket.indices) {
-            if (bucket[i].key == key) {
-                val value = bucket[i].value
-                bucket.removeAt(i)
-                return value
-            }
-        }
-        return null
+    operator fun set(key: Int, value: Int) {
+        put(key, value)
     }
 }
 
@@ -87,13 +85,13 @@ fun main() {
         when (line[0]) {
             "get" -> {
                 val key = line[1].toInt()
-                val result = hashTable.get(key)
+                val result = hashTable[key]
                 println(result ?: "None")
             }
             "put" -> {
                 val key = line[1].toInt()
                 val value = line[2].toInt()
-                hashTable.put(key, value)
+                hashTable[key] = value
             }
             "delete" -> {
                 val key = line[1].toInt()
