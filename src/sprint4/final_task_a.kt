@@ -1,49 +1,48 @@
 package sprint4
 
-// https://contest.yandex.ru/contest/24414/run-report/145081780/
+// https://contest.yandex.ru/contest/24414/run-report/145575246/
 
 /*
 -- ПРИНЦИП РАБОТЫ --
     Я реализовал поисковую систему с использованием инвертированного индекса для эффективного поиска релевантных документов.
     Индекс инкапсулирован в класс SearchIndex. Для каждого добавляемого документа подсчитываются частоты слов с использованием groupingBy и eachCount.
-    Для каждого слова в индексе хранится список объектов WordOccurrence (docId, count), где count - это частота слова в документе.
-    Индекс - private mutableMapOf<String, MutableList<WordOccurrence>>.
-    Для каждого запроса в методе getRelevantDocuments: уникальные слова запроса (toSet()), затем imperative накопление релевантности в mutableMap<Int, Int> путем суммирования count для каждого docId по всем словам.
+    Для каждого слова в индексе хранится список объектов DocumentRelevance (docId, relevance), где relevance - это частота слова в документе.
+    Индекс - private mutableMapOf<String, MutableList<DocumentRelevance>>.
+    Нумерация документов инкапсулирована внутри класса: каждый вызов addDocument присваивает следующий уникальный идентификатор начиная с 1,
+    что предотвращает добавление документов с одним id.
     Затем создаются кандидаты как List<DocumentRelevance> из тех, где relevance > 0 (хотя в практике все >0).
-    Из них выбирается топ-5 с помощью selectTopK, после чего топ-5 сортируется для правильного порядка.
-    Вывод строится с помощью StringBuilder, обрабатывая каждый запрос последовательно.
+    Из них выбирается топ-5 с помощью selectTopK.
+    selectTopK работает следующим образом: проходимся по всем кандидатам, поддерживаем список до k лучших элементов.
+    Если размер списка меньше k, добавляем кандидата. Иначе находим индекс худшего элемента в списке (findWorstIndex), и если кандидат лучше худшего, заменяем его.
+    В конце сортируем полученный топ-k по компаратору (O(k log k) с k=5 ~ O(1)) для правильного порядка.
+    findWorstIndex: линейный поиск - элемент, который хуже всех по компаратору
+    Вывод строится с помощью buildString, обрабатывая каждый запрос последовательно.
 
 -- ДОКАЗАТЕЛЬСТВО КОРРЕКТНОСТИ --
     Из описания следует, что индекс захватывает все вхождения слов с частотами, игнорируя отсутствующие в документах.
     Релевантность вычисляется как сумма частот уникальных слов запроса, что соответствует задаче (set игнорирует дубли в запросе).
     Фильтр > 0 исключает нерелевантные. Для топ-5 используется компаратор compareByDescending { relevance } thenBy { docId },
     что гарантирует правильный порядок: убывание релевантности, при равенстве - возрастание docId.
-    selectTopK выбирает топ-5 по компаратору, а финальная сортировка (O(k log k) с k=5 ~ O(1)) упорядочивает их.
+    selectTopK выбирает топ-5 по компаратору и упорядочивает их.
     Алгоритм охватывает все документы без полного перебора каждый раз.
 
 -- ВРЕМЕННАЯ СЛОЖНОСТЬ --
-    Пусть n - число документов,
-    A - общее число слов во всех документах,
-    m - число запросов,
-    Q - общее число слов во всех запросах,
-    b - среднее число уникальных слов в одном запросе,
-    v - размер словаря (unique words across all docs),
-    L - средняя длина списка в индексе для слова (средняя document frequency, df, L ~ n / v в uniform модели).
-    Построение индекса: O(A).
-    Для m запросов:
-        Разбор запроса и set: O(длина запроса), суммарно O(Q).
-        Накопление релевантности: O(сумма длин списков для уникальных слов запроса) ~ O(m * b * L).
-        Создание кандидатов: O(c), где c - число уникальных docId в собранных (c <= n).
-        selectTopK: O(c * k) с k=5 ~ O(c).
-        Сортировка топ-5: O(1).
-    Итоговая сложность: O(A + Q + m * (b * L + c)).
-    В худшем случае (L ~ n, c ~ n, b ~ Q/m): O(A + Q + m * ( (Q/m) * n + n )) ~ O(A + Q + Q * n + m n).
-    С учетом ограничений (A, Q <= 10^6, m, n <= 10^4): в худшем O(10^6 + 10^6 * 10^4) = O(10^{10}), но на практике средние значения меньше, и imperative стиль минимизирует константы.
+    Пусть N - количество документов,
+    D - количество слов в одном документе,
+    M - количество запросов,
+    Q - количество слов в одном запросе (в худшем случае они все уникальные).
+    Построение индекса: O(N * D).
+    Для M запросов:
+        Разбор запроса и set: O(Q) на запрос, суммарно O(M * Q).
+        Накопление релевантности: в худшем случае O(Q * N) на запрос (если каждое слово встречается во всех документах), суммарно O(M * Q * N).
+        Создание кандидатов: O(N) в худшем на запрос.
+        selectTopK: O(N * k) с k=5 ~ O(N) на запрос.
+    Итоговая сложность: O(N * D + M * Q + M * Q * N + M * N).
 
 -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
-    Индекс: O(A), так как каждый уникальный word-doc добавляется раз (U <= A).
-    Для обработки запросов: relevanceMap O(c <= n), candidates O(c), topK O(k=5); парсинг запроса O(b).
-    Общая: O(A + n + m + Q).
+    Индекс: O(N * D), так как каждый уникальный word-doc добавляется раз (<= N * D).
+    Для обработки запросов: relevanceMap O(N), candidates O(N), topK O(k=5); парсинг запроса O(Q).
+    Общая: O(N * D + N + M + M * Q).
 */
 
 data class DocumentRelevance(
@@ -51,63 +50,51 @@ data class DocumentRelevance(
     val relevance: Int
 )
 
-data class WordOccurrence(
-    val docId: Int,
-    val count: Int
-)
-
 class SearchIndex {
-    private val indexMap = mutableMapOf<String, MutableList<WordOccurrence>>()
-
-    fun addDocument(docId: Int, document: String) {
+    private val indexMap = mutableMapOf<String, MutableList<DocumentRelevance>>()
+    private var nextId = 1
+    fun addDocument(document: String) {
+        val docId = nextId++
         val docWords = document.split(" ")
         val countWordsMap = docWords.groupingBy { it }.eachCount()
         countWordsMap.forEach { (word, count) ->
-            indexMap.getOrPut(word) { mutableListOf() }.add(WordOccurrence(docId, count))
+            indexMap.getOrPut(word) { mutableListOf() }.add(DocumentRelevance(docId, count))
         }
     }
-
     fun getRelevantDocuments(query: String): List<Int> {
         val queWordsSet = query.split(" ").toSet()
         if (queWordsSet.isEmpty()) return emptyList()
-
         val relevanceMap = mutableMapOf<Int, Int>()
         for (word in queWordsSet) {
             val occurrences = indexMap[word] ?: continue
             for (occ in occurrences) {
-                relevanceMap[occ.docId] = relevanceMap.getOrDefault(occ.docId, 0) + occ.count
+                relevanceMap[occ.docId] = relevanceMap.getOrDefault(occ.docId, 0) + occ.relevance
             }
         }
-
         if (relevanceMap.isEmpty()) return emptyList()
-
         val candidates = relevanceMap.map { (docId, relevance) -> DocumentRelevance(docId, relevance) }
-
         val comp = compareByDescending<DocumentRelevance> { it.relevance }.thenBy { it.docId }
         val topFive = selectTopK(candidates, 5, comp)
-
-        return topFive.sortedWith(comp).map { it.docId }
+        return topFive.map { it.docId }
     }
 }
 
 fun main() {
     val reader = System.`in`.bufferedReader()
     val index = SearchIndex()
-
     val n = reader.readLine().toInt()
-    repeat(n) { i ->
-        index.addDocument(i + 1, reader.readLine().trim())
+    repeat(n) {
+        index.addDocument(reader.readLine().trim())
     }
-
-    val sb = StringBuilder()
-    repeat(reader.readLine().toInt()) {
-        val query = reader.readLine().trim()
-        val relevant = index.getRelevantDocuments(query)
-        val line = if (relevant.isNotEmpty()) relevant.joinToString(" ") else ""
-        sb.appendLine(line)
+    val m = reader.readLine().toInt()
+    val result = buildString {
+        repeat(m) {
+            val query = reader.readLine().trim()
+            val relevant = index.getRelevantDocuments(query)
+            appendLine(relevant.joinToString(" "))
+        }
     }
-
-    print(sb.toString())
+    print(result)
 }
 
 fun selectTopK(
@@ -116,21 +103,28 @@ fun selectTopK(
     comparator: Comparator<DocumentRelevance>
 ): List<DocumentRelevance> {
     val topK = mutableListOf<DocumentRelevance>()
-
     for (candidate in candidates) {
         if (topK.size < k) {
             topK.add(candidate)
         } else {
-            var worstIndex = 0
-            for (i in 1 until topK.size) {
-                if (comparator.compare(topK[i], topK[worstIndex]) > 0) {
-                    worstIndex = i
-                }
-            }
+            val worstIndex = findWorstIndex(topK, comparator)
             if (comparator.compare(candidate, topK[worstIndex]) < 0) {
                 topK[worstIndex] = candidate
             }
         }
     }
-    return topK
+    return topK.sortedWith(comparator)
+}
+
+private fun findWorstIndex(
+    topK: List<DocumentRelevance>,
+    comparator: Comparator<DocumentRelevance>
+): Int {
+    var worstIndex = 0
+    for (i in 1 until topK.size) {
+        if (comparator.compare(topK[i], topK[worstIndex]) > 0) {
+            worstIndex = i
+        }
+    }
+    return worstIndex
 }
