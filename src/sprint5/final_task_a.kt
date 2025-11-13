@@ -21,7 +21,7 @@ class Person(
 fun <T : Comparable<T>> MutableList<T>.heapSort(): MutableList<T> {
     val sortedList = mutableListOf<T>()
 
-    while (this.size > 1) {
+    while (this.isNotEmpty()) {
         val max = popMin()
         sortedList.add(max)
     }
@@ -78,10 +78,10 @@ fun main() {
         heap.heapAdd(Person(name, tasks.toInt(), fines.toInt()))
     }
 
+    val sortedList = heap.heapSort()
     val result = buildString {
-        while (heap.isNotEmpty()) {
-            val person = heap.popMin()
-            appendLine(person.name)
+        sortedList.forEach {
+            appendLine(it.name)
         }
     }
 
