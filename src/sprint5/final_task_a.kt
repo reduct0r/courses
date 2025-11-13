@@ -31,8 +31,19 @@ fun <T : Comparable<T>> heapSort(heap: MutableList<T>): MutableList<T> {
         }
     }
 
-    fun siftDown(){
+    tailrec fun siftDown(heap: MutableList<T>, index: Int){
+        val left = index * 2
+        val right = left + 1
 
+        if (left > heap.size) {
+            return
+        }
+        val minChildIndex = if (heap[left] > heap[right] && right < heap.size) { right } else { left }
+
+        if (heap[minChildIndex] < heap[index]) {
+            Collections.swap(heap, minChildIndex, index)
+            return siftDown(heap, minChildIndex)
+        }
     }
 }
 
