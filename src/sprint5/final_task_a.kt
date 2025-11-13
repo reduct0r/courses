@@ -45,6 +45,20 @@ fun <T : Comparable<T>> heapSort(heap: MutableList<T>): MutableList<T> {
             return siftDown(heap, minChildIndex)
         }
     }
+
+    fun popMin(heap: MutableList<T>): T {
+        val result = heap[1]
+        heap[1] = heap[heap.size - 1]
+        heap.removeAt(heap.size - 1)
+        siftDown(heap, 1)
+        return result
+    }
+
+    fun heapAdd(heap: MutableList<T>, key: T) {
+        heap.add(key)
+        val index = heap.size - 1
+        siftUp(heap, index)
+    }
 }
 
 fun main() {
