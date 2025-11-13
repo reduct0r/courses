@@ -1,4 +1,4 @@
-package sprint5
+package sprint5_fa
 
 import java.util.Collections
 
@@ -18,49 +18,72 @@ class Person(
     override fun compareTo(other: Person): Int = comparator.compare(this, other)
 }
 
-fun <T : Comparable<T>> heapSort(heap: MutableList<T>): MutableList<T> {
-    tailrec fun siftUp(heap: MutableList<T>, index: Int) {
-        if (index == 1) {
-            return
-        }
-        val parentIndex = index / 2
+fun <T : Comparable<T>> MutableList<T>.heapSort(): MutableList<T> {
+    val sortedList = mutableListOf<T>()
 
-        if (heap[parentIndex] > heap[index]) {
-            Collections.swap(heap, parentIndex, index)
-            return siftUp(heap, parentIndex)
-        }
+    while (this.size > 1) {
+        val max = popMin()
+        sortedList.add(max)
     }
+    return sortedList
+}
 
-    tailrec fun siftDown(heap: MutableList<T>, index: Int){
-        val left = index * 2
-        val right = left + 1
+tailrec fun <T : Comparable<T>> MutableList<T>.siftDown(index: Int){
+    val left = index * 2 + 1
+    val right = left + 1
 
-        if (left > heap.size) {
-            return
-        }
-        val minChildIndex = if (heap[left] > heap[right] && right < heap.size) { right } else { left }
-
-        if (heap[minChildIndex] < heap[index]) {
-            Collections.swap(heap, minChildIndex, index)
-            return siftDown(heap, minChildIndex)
-        }
+    if (left >= this.size) {
+        return
     }
+    val minChildIndex = if (right < this.size && this[left] > this[right]) { right } else { left }
 
-    fun popMin(heap: MutableList<T>): T {
-        val result = heap[1]
-        heap[1] = heap[heap.size - 1]
-        heap.removeAt(heap.size - 1)
-        siftDown(heap, 1)
-        return result
-    }
-
-    fun heapAdd(heap: MutableList<T>, key: T) {
-        heap.add(key)
-        val index = heap.size - 1
-        siftUp(heap, index)
+    if (this[minChildIndex] < this[index]) {
+        Collections.swap(this, minChildIndex, index)
+        return siftDown(minChildIndex)
     }
 }
 
+fun <T : Comparable<T>> MutableList<T>.popMin(): T {
+    val result = this[0]
+    this[0] = this[this.size - 1]
+    this.removeAt(this.size - 1)
+    siftDown(0)
+    return result
+}
+
+tailrec fun <T : Comparable<T>> MutableList<T>.siftUp(index: Int) {
+    if (index == 0) {
+        return
+    }
+    val parentIndex = (index - 1) / 2
+
+    if (this[parentIndex] > this[index]) {
+        Collections.swap(this, parentIndex, index)
+        return siftUp(parentIndex)
+    }
+}
+
+fun <T : Comparable<T>> MutableList<T>.heapAdd(key: T) {
+    this.add(key)
+    siftUp(this.size - 1)
+}
+
 fun main() {
-    print(Person("d", 3,4) > Person("d", 3,1))
+    val reader = System.`in`.bufferedReader()
+    val n = reader.readLine().toInt()
+    val heap = mutableListOf<Person>()
+
+    repeat(n) {
+        val (name, tasks, fines) = reader.readLine().trim().split(" ")
+        heap.heapAdd(Person(name, tasks.toInt(), fines.toInt()))
+    }
+
+    val result = buildString {
+        while (heap.isNotEmpty()) {
+            val person = heap.popMin()
+            appendLine(person.name)
+        }
+    }
+
+    print(result)
 }
