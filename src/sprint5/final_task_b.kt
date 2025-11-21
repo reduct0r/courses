@@ -1,91 +1,64 @@
 package sprint5_fb
 
-// https://contest.yandex.ru/contest/24810/run-report/147766350/
+// https://contest.yandex.ru/contest/24810/run-report/149771783/
 
-/*
+/**
 -- ПРИНЦИП РАБОТЫ --
     Я реализовал удаление узла из двоичного дерева поиска (BST) с использованием самого правого узла в левом поддереве.
-    Рекурсивно находим узел D для удаления, передавая его parent.
-    Если D найден:
-        Находим преемника P и его родителя pParent в левом поддереве.
-        Если P = null (нет left), заменяем D на D.right.
-        Иначе удаляем P из старого места: pParent.right = P.left.
-        Перемещаем P на место D: P.left = D.left, P.right = D.right.
-        Обновляем parent.child = P (проверяем left/right).
-        Для корня возвращаем P или D.right.
-    Возвращает обновлённый подкорень.
-
+    Рекурсивно ищем узел D для удаления: если key < node.value, идем в левое поддерево (node.left = remove(node.left, key));
+    если key > node.value, идем в правое (node.right = remove(node.right, key));
+    если node == null, возвращаем null. Это следует BST-свойствам: левое поддерево < узел < правое.
+    Если D найден (node.value == key):
+        Если нет детей, возвращаем null (удаляем узел).
+        Если один ребёнок, возвращаем этого ребёнка (заменяем D на него).
+        Если два ребёнка: находим преемника P (максимум в левом поддереве) рекурсивно - спускаемся вправо от node.left, пока right != null.
+        Копируем P.value в node.value (заменяем значение D на P), затем рекурсивно удаляем P из левого поддерева (node.left = remove(node.left, P.value)).
+    Функция возвращает обновлённый корень поддерева (для рекурсивного присвоения в родителе).
 -- ДОКАЗАТЕЛЬСТВО КОРРЕКТНОСТИ --
-    Поиск следует BST-свойствам: влево если key < node, вправо иначе - находит искомый D или null.
-    Для 0/1 ребёнка замена сохраняет BST (left < parent < right).
-    Для 2 детей P - max в left, замена P на D сохраняет инвариант (все left < P < right).
-    Удаление P (как листа или с 1 ребёнком) не нарушает, т.к. P.left заменяет P.
-    Нет циклов, т.к. P.left = D.left только после удаления P.
-    Удаляет первый найденный узел.
-
+    Поиск сохраняет BST: спуск влево/вправо по сравнению с value гарантирует нахождение первого узла с key или null, без нарушения порядка.
+    Для удаления без детей: поддерево становится null, BST сохраняется (нет элементов для нарушения).
+    С одним ребёнком: замена на ребёнка сохраняет инвариант (ребёнок уже < или > родителя D по BST).
+    С двумя: P - max в left, так что left.min <= все left < D < все right; копирование P.value в node сохраняет (все left <= P.value < все right);
+    рекурсивное удаление P (лист или один ребёнок) не нарушает, т.к. использует те же правила. Нет циклов, т.к. только копируем value, не перемещаем узлы.
+    Удаляет первый найденный узел, рекурсия обеспечивает обновление ссылок вверх.
 -- ВРЕМЕННАЯ СЛОЖНОСТЬ --
-    Поиск D и P: O(h), h - высота дерева (O(log n) в сбалансированном, O(n) в худшем).
-    Каждая операция - O(h) (спуск + константы).
-    Для m операций - O(m * h).
-
+    Поиск D и P: O(h), где h - высота дерева (O(log n) в сбалансированном, O(n) в худшем).
+    Каждая операция remove - O(h) (спуск + константы + рекурсивный вызов для P).
+    Если несколько вызовов remove (m раз), общая - O(m * h).
 -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
-    Рекурсия O(h) стека (в худшем O(n)).
-    Дерево O(n) узлов.
+    Рекурсия O(h) стека (в худшем O(n) для вырожденного дерева).
+    Дерево занимает O(n) узлов.
 */
 
 // <template>
 class Node(var left: Node?, var right: Node?, var value: Int)
 // <template>
 
-
 fun remove(root: Node?, key: Int): Node? {
-
-    tailrec fun findMaxParent(node: Node?, parent: Node?): Node? {
-        if (node == null) return null
-        if (node.right == null) return parent
-        return findMaxParent(node.right, node)
+    tailrec fun findMax(node: Node): Node {
+        if (node.right == null) return node
+        return findMax(node.right!!)
     }
 
-    fun delete(node: Node?, key: Int, parent: Node?): Node? {
-        if (node == null) return null
+    if (root == null) return null
 
-        if (node.value == key) {
-            val pParent = findMaxParent(node.left, node)
-            var p = pParent?.right
-            if (pParent == node) p = node.left
-
-            if (p == null) {
-                if (parent == null) return node.right
-                if (parent.left == node) parent.left = node.right
-                else parent.right = node.right
-                return node.right
-            }
-
-            val isLeftChild = pParent!!.left == p
-            if (isLeftChild) {
-                pParent.left = p.left
-            } else {
-                pParent.right = p.left
-            }
-
-            p.left = node.left
-            p.right = node.right
-
-            if (parent == null) return p
-            if (parent.left == node) parent.left = p
-            else parent.right = p
-
-            return p
+    if (key < root.value) {
+        root.left = remove(root.left, key)
+    } else if (key > root.value) {
+        root.right = remove(root.right, key)
+    } else {
+        if (root.left == null && root.right == null) {
+            return null
         }
-
-        if (key < node.value) {
-            node.left = delete(node.left, key, node)
-        } else {
-            node.right = delete(node.right, key, node)
+        if (root.left == null) {
+            return root.right
         }
-
-        return node
+        if (root.right == null) {
+            return root.left
+        }
+        val maxInLeft = findMax(root.left!!)
+        root.value = maxInLeft.value
+        root.left = remove(root.left, maxInLeft.value)
     }
-
-    return delete(root, key, null)
+    return root
 }
