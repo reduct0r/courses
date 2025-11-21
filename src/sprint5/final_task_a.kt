@@ -4,20 +4,18 @@ import java.util.Collections
 
 // https://contest.yandex.ru/contest/24810/run-report/148364594/
 
-/*
+/**
 -- ПРИНЦИП РАБОТЫ --
-    Я реализовал пирамидальную сортировку (heapsort) с использованием min-heap.
-    Куча строится путём последовательного добавления элементов heapAdd с siftUp для поддержания heap порядка.
-    Для сортировки повторно извлекается минимальный элемент (popMin с siftDown) и добавляется в отсортированный список.
-    Сравнение через compareTo в Person: первый = (больше задач, меньше штрафов, лексикографически по имени) считается меньшим.
-    В main читается ввод, строится heap, вызывается heapSort для получения sortedList, выводятся имена по одному в строке.
-    Функции являются расширениями MutableList<T>.
+    Я реализовал пирамидальную сортировку (heapsort) с использованием max-heap.
+    Куча строится in-place путём просеивания вниз (siftDown) начиная с середины списка, что занимает O(n) времени.
+    Для сортировки последовательно меняется местами корень с последним элементом, уменьшается размер кучи и вызывается siftDown.
+    Сравнение осуществляется через Comparator<Person>: приоритет - descending по completedTasks, ascending по numOfFines, ascending по name.
+    В main читается ввод, создаётся список, вызывается heapSort с компаратором, выводятся имена по одному в строке через joinToString.
 
 -- ДОКАЗАТЕЛЬСТВО КОРРЕКТНОСТИ --
-    Добавление с siftUp и извлечение с siftDown сохраняют порядок: родитель всегда <= потомкам.
-    Сравнение по компаратору и compareTo методу в классе Person.
-    При построении все элементы в куче. При сортировке min (лучший) извлекается первым, затем следующий min из оставшихся, и так далее.
-    Поскольку compareTo определяет порядок (от лучших к худшим), финальный sortedList будет отсортирован корректно.
+    Построение кучи с siftDown обеспечивает порядок: родитель всегда <= потомкам по компаратору.
+    При сортировке min (лучший) перемещается в конец, затем следующий min из оставшихся, и так далее.
+    Поскольку компаратор определяет порядок (от лучших к худшим), финальный список будет отсортирован корректно.
     Индексация с нуля обеспечивает отсутствие ошибок в структуре и не требует фиктивных элементов.
 
 -- ВРЕМЕННАЯ СЛОЖНОСТЬ --
@@ -26,92 +24,57 @@ import java.util.Collections
     Общая сложность O(n log n) в худшем и среднем случае.
 
 -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
-    Куча занимает O(n), sortedList дополнительно O(n).
-    Рекурсивные siftUp/siftDown (tailrec) не добавляют стек.
+    Сортировка in-place, дополнительная память O(1) (не считая входного списка).
+    Рекурсивный siftDown (tailrec) не добавляет стек.
 */
 
 class Person(
     val name: String,
     val completedTasks: Int,
     val numOfFines: Int
-
-): Comparable<Person> {
-
+) {
     companion object {
-        private val comparator = compareBy<Person> { -it.completedTasks }
+        val comparator = compareByDescending<Person> { it.completedTasks }
             .thenBy { it.numOfFines }
             .thenBy { it.name }
     }
-
-    override fun compareTo(other: Person): Int = comparator.compare(this, other)
 }
 
-fun <T : Comparable<T>> MutableList<T>.heapSort(): MutableList<T> {
-    val sortedList = mutableListOf<T>()
+fun <T> heapSort(list: MutableList<T>, comparator: Comparator<T>) {
+    tailrec fun siftDown(index: Int, heapSize: Int = list.size) {
+        val left = index * 2 + 1
+        val right = left + 1
 
-    while (this.isNotEmpty()) {
-        val max = popMin()
-        sortedList.add(max)
+        if (left >= heapSize) {
+            return
+        }
+        var maxChildIndex = left
+
+        if (right < heapSize && comparator.compare(list[right], list[left]) > 0) maxChildIndex = right
+        if (comparator.compare(list[maxChildIndex], list[index]) > 0) {
+            Collections.swap(list, maxChildIndex, index)
+            return siftDown(maxChildIndex, heapSize)
+        }
     }
-    return sortedList
-}
 
-tailrec fun <T : Comparable<T>> MutableList<T>.siftDown(index: Int){
-    val left = index * 2 + 1
-    val right = left + 1
-
-    if (left >= this.size) {
-        return
+    for (i in list.size / 2 - 1 downTo 0) {
+        siftDown(i)
     }
-    val minChildIndex = if (right < this.size && this[left] > this[right]) { right } else { left }
 
-    if (this[minChildIndex] < this[index]) {
-        Collections.swap(this, minChildIndex, index)
-        return siftDown(minChildIndex)
+    for (i in list.lastIndex downTo 1) {
+        Collections.swap(list, 0, i)
+        siftDown(0, i)
     }
-}
-
-fun <T : Comparable<T>> MutableList<T>.popMin(): T {
-    val result = this[0]
-    this[0] = this[this.size - 1]
-    this.removeAt(this.size - 1)
-    siftDown(0)
-    return result
-}
-
-tailrec fun <T : Comparable<T>> MutableList<T>.siftUp(index: Int) {
-    if (index == 0) {
-        return
-    }
-    val parentIndex = (index - 1) / 2
-
-    if (this[parentIndex] > this[index]) {
-        Collections.swap(this, parentIndex, index)
-        return siftUp(parentIndex)
-    }
-}
-
-fun <T : Comparable<T>> MutableList<T>.heapAdd(key: T) {
-    this.add(key)
-    siftUp(this.size - 1)
 }
 
 fun main() {
     val reader = System.`in`.bufferedReader()
     val n = reader.readLine().toInt()
-    val heap = mutableListOf<Person>()
-
+    val persons = mutableListOf<Person>()
     repeat(n) {
         val (name, tasks, fines) = reader.readLine().trim().split(" ")
-        heap.heapAdd(Person(name, tasks.toInt(), fines.toInt()))
+        persons.add(Person(name, tasks.toInt(), fines.toInt()))
     }
-
-    val sortedList = heap.heapSort()
-    val result = buildString {
-        sortedList.forEach {
-            appendLine(it.name)
-        }
-    }
-
-    print(result)
+    heapSort(persons, Person.comparator)
+    print(persons.joinToString("\n") { it.name })
 }
