@@ -2,7 +2,7 @@ package sprint5_fa
 
 import java.util.Collections
 
-// https://contest.yandex.ru/contest/24810/run-report/149771321/
+// https://contest.yandex.ru/contest/24810/run-report/150228714/
 
 /**
 -- ПРИНЦИП РАБОТЫ --

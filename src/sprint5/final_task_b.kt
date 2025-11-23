@@ -1,6 +1,6 @@
 package sprint5_fb
 
-// https://contest.yandex.ru/contest/24810/run-report/149771783/
+// https://contest.yandex.ru/contest/24810/run-report/150229737/
 
 /**
 -- ПРИНЦИП РАБОТЫ --
@@ -39,26 +39,17 @@ fun remove(root: Node?, key: Int): Node? {
         if (node.right == null) return node
         return findMax(node.right!!)
     }
-
-    if (root == null) return null
-
-    if (key < root.value) {
-        root.left = remove(root.left, key)
-    } else if (key > root.value) {
-        root.right = remove(root.right, key)
-    } else {
-        if (root.left == null && root.right == null) {
-            return null
+    when {
+        root == null -> return null
+        key < root.value -> root.left = remove(root.left, key)
+        key > root.value -> root.right = remove(root.right, key)
+        else -> {
+            if (root.left == null) return root.right
+            if (root.right == null) return root.left
+            val maxInLeft = findMax(root.left!!)
+            root.value = maxInLeft.value
+            root.left = remove(root.left, maxInLeft.value)
         }
-        if (root.left == null) {
-            return root.right
-        }
-        if (root.right == null) {
-            return root.left
-        }
-        val maxInLeft = findMax(root.left!!)
-        root.value = maxInLeft.value
-        root.left = remove(root.left, maxInLeft.value)
     }
     return root
 }
