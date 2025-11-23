@@ -26,7 +26,7 @@ import java.util.Collections
 -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
     Сортировка in-place, дополнительная память O(1) (не считая входного списка).
     Рекурсивный siftDown (tailrec) не добавляет стек.
-*/
+ */
 
 class Person(
     val name: String,
@@ -40,8 +40,10 @@ class Person(
     }
 }
 
-fun <T> heapSort(list: MutableList<T>, comparator: Comparator<T>) {
-    tailrec fun siftDown(index: Int, heapSize: Int = list.size) {
+fun <T> MutableList<T>.heapSort(comparator: Comparator<in T>) {
+    operator fun T.compareTo(other: T): Int = comparator.compare(this, other)
+
+    tailrec fun siftDown(index: Int, heapSize: Int = this.size) {
         val left = index * 2 + 1
         val right = left + 1
 
@@ -50,19 +52,20 @@ fun <T> heapSort(list: MutableList<T>, comparator: Comparator<T>) {
         }
         var maxChildIndex = left
 
-        if (right < heapSize && comparator.compare(list[right], list[left]) > 0) maxChildIndex = right
-        if (comparator.compare(list[maxChildIndex], list[index]) > 0) {
-            Collections.swap(list, maxChildIndex, index)
+        if (right < heapSize && this[right] > this[left]) maxChildIndex = right
+
+        if (this[maxChildIndex] > this[index]) {
+            Collections.swap(this, maxChildIndex, index)
             return siftDown(maxChildIndex, heapSize)
         }
     }
 
-    for (i in list.size / 2 - 1 downTo 0) {
+    for (i in this.size / 2 - 1 downTo 0) {
         siftDown(i)
     }
 
-    for (i in list.lastIndex downTo 1) {
-        Collections.swap(list, 0, i)
+    for (i in this.lastIndex downTo 1) {
+        Collections.swap(this, 0, i)
         siftDown(0, i)
     }
 }
@@ -75,6 +78,6 @@ fun main() {
         val (name, tasks, fines) = reader.readLine().trim().split(" ")
         persons.add(Person(name, tasks.toInt(), fines.toInt()))
     }
-    heapSort(persons, Person.comparator)
+    persons.heapSort(Person.comparator)
     print(persons.joinToString("\n") { it.name })
 }
