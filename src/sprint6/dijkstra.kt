@@ -13,11 +13,15 @@ class Graph(
     private val distMatrix = MutableList(numOfVertex * numOfVertex) { Int.MAX_VALUE }
 
     fun addEdge(v: Int, u: Int, weight: Int) {
-        if (matrix[v * numOfVertex + u] == null) {
+        val path = matrix[v * numOfVertex + u]
+        if (path == null) {
             matrix[v * numOfVertex + u] = weight
             matrix[u * numOfVertex + v] = weight
         } else {
-            throw IllegalArgumentException()
+            if (path > weight) {
+                matrix[v * numOfVertex + u] = weight
+                matrix[u * numOfVertex + v] = weight
+            }
         }
     }
 
@@ -81,7 +85,7 @@ class Graph(
         val builder = StringBuilder()
         for (i in 0 until numOfVertex) {
             for (j in 0 until numOfVertex) {
-                builder.append(distMatrix[i + j])
+                builder.append(distMatrix[i * numOfVertex + j])
                 builder.append(" ")
             }
             builder.appendLine()
