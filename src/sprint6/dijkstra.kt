@@ -1,11 +1,16 @@
 package sprint6_my
 
+import kotlin.collections.get
+import kotlin.collections.set
+import kotlin.text.compareTo
+
 class Graph(
     val numOfVertex: Int
 ) {
     private val matrix = MutableList<Int?>(numOfVertex * numOfVertex) { null }
-    val visited = MutableList(numOfVertex) { false }
-    val shortestDistToVertex = MutableList(numOfVertex) { Int.MAX_VALUE }
+    var visited = MutableList(numOfVertex) { false }
+    var shortestDistToVertex = MutableList(numOfVertex) { Int.MAX_VALUE }
+    private val distMatrix = MutableList(numOfVertex * numOfVertex) { Int.MAX_VALUE }
 
     fun addEdge(v: Int, u: Int, weight: Int) {
         if (matrix[v * numOfVertex + u] == null) {
@@ -61,17 +66,27 @@ class Graph(
         return builder
     }
 
-    fun pathsToString(nullPath: String = "-1"): StringBuilder {
+    fun reset() {
+        visited = MutableList(numOfVertex) { false }
+        shortestDistToVertex = MutableList(numOfVertex) { Int.MAX_VALUE }
+    }
+
+    fun saveDist(v: Int){
+        for (j in 0 until numOfVertex) {
+            distMatrix[v * numOfVertex + j] = if (shortestDistToVertex[j] >= Int.MAX_VALUE) -1 else shortestDistToVertex[j]
+        }
+    }
+
+    fun pathsToStr(): String{
         val builder = StringBuilder()
         for (i in 0 until numOfVertex) {
             for (j in 0 until numOfVertex) {
-                val value = distMatrix[i][j]
-                builder.append(if (value >= INF) nullPath else value.toString())
+                builder.append(distMatrix[i + j])
                 builder.append(" ")
             }
             builder.appendLine()
         }
-        return builder
+        return builder.toString()
     }
 
 }
@@ -87,10 +102,11 @@ fun main() {
     }
 
     for (i in 0 until n) {
+        graph.reset()
         dijkstra(graph, i)
     }
 
-    print (graph.matrixToSB().toString())
+    print(graph.pathsToStr())
 }
 
 fun dijkstra(graph: Graph, start: Int) {
@@ -113,7 +129,7 @@ fun dijkstra(graph: Graph, start: Int) {
                 }
             }
         }
-
     }
+    graph.saveDist(start)
 }
 
