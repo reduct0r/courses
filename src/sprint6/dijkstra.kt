@@ -1,16 +1,12 @@
 package sprint6_my
 
-import kotlin.collections.get
-import kotlin.collections.set
-import kotlin.text.compareTo
-
 class Graph(
     val numOfVertex: Int
 ) {
-    private val matrix = MutableList<Int?>(numOfVertex * numOfVertex) { null }
-    var visited = MutableList(numOfVertex) { false }
-    var shortestDistToVertex = MutableList(numOfVertex) { Int.MAX_VALUE }
-    private val distMatrix = MutableList(numOfVertex * numOfVertex) { Int.MAX_VALUE }
+    val matrix: Array<Int?> = arrayOfNulls(numOfVertex * numOfVertex)
+    var visited: BooleanArray = BooleanArray(numOfVertex)
+    var shortestDistToVertex: LongArray = LongArray(numOfVertex) { Long.MAX_VALUE / 2 }
+    private val distMatrix: IntArray = IntArray(numOfVertex * numOfVertex) { -1 }
 
     fun addEdge(v: Int, u: Int, weight: Int) {
         val path = matrix[v * numOfVertex + u]
@@ -25,24 +21,12 @@ class Graph(
         }
     }
 
-    fun getOutWithWeight(v: Int): MutableList<Pair<Int, Int?>> {
-        val list = mutableListOf<Pair<Int, Int?>>()
-        for (i in 0 until numOfVertex) {
-            list.add(Pair(i, matrix[v * numOfVertex + i]))
-        }
-        return list
-    }
-
     fun setVisited(v: Int) {
         visited[v] = true
     }
 
-    fun getNumberOfEdges(): Int {
-        return matrix.count { it != null }
-    }
-
     fun getMinNotVisitedVertex(): Int? {
-        var currentMin = Int.MAX_VALUE
+        var currentMin = Long.MAX_VALUE / 2
         var minVertex: Int? = null
         for (i in 0 until numOfVertex) {
             if (!visited[i] && shortestDistToVertex[i] < currentMin) {
@@ -53,31 +37,18 @@ class Graph(
         return minVertex
     }
 
-    fun getShortestDist(v: Int): Int {
+    fun getShortestDist(v: Int): Long {
         return shortestDistToVertex[v]
     }
 
-    fun matrixToSB(nullPath: String = "0"): StringBuilder {
-        val builder = StringBuilder()
-        for (i in 0 until numOfVertex) {
-            for (j in 0 until numOfVertex) {
-                val value = matrix[i * numOfVertex + j]
-                builder.append(value?.toString() ?: nullPath)
-                builder.append(" ")
-            }
-            builder.appendLine()
-        }
-        return builder
-    }
-
     fun reset() {
-        visited = MutableList(numOfVertex) { false }
-        shortestDistToVertex = MutableList(numOfVertex) { Int.MAX_VALUE }
+        visited = BooleanArray(numOfVertex)
+        shortestDistToVertex = LongArray(numOfVertex) { Long.MAX_VALUE / 2 }
     }
 
     fun saveDist(v: Int){
         for (j in 0 until numOfVertex) {
-            distMatrix[v * numOfVertex + j] = if (shortestDistToVertex[j] >= Int.MAX_VALUE) -1 else shortestDistToVertex[j]
+            distMatrix[v * numOfVertex + j] = if (shortestDistToVertex[j] == Long.MAX_VALUE / 2) -1 else shortestDistToVertex[j].toInt()
         }
     }
 
@@ -108,32 +79,29 @@ fun main() {
     for (i in 0 until n) {
         graph.reset()
         dijkstra(graph, i)
+        graph.saveDist(i)
     }
 
     print(graph.pathsToStr())
 }
 
 fun dijkstra(graph: Graph, start: Int) {
-    graph.shortestDistToVertex[start] = 0
+    graph.shortestDistToVertex[start] = 0L
 
     while (true) {
         val v = graph.getMinNotVisitedVertex()
-        if (v == null || graph.getShortestDist(v) == Int.MAX_VALUE) {
+        if (v == null || graph.getShortestDist(v) == Long.MAX_VALUE / 2) {
             break
         }
 
         graph.setVisited(v)
-        val out = graph.getOutWithWeight(v)
 
-        for ((u, w) in out) {
-            if (w != null) {
-                val newDist = graph.getShortestDist(v) + w
-                if (newDist < graph.getShortestDist(u)) {
-                    graph.shortestDistToVertex[u] = newDist
-                }
+        for (u in 0 until graph.numOfVertex) {
+            val w = graph.matrix[v * graph.numOfVertex + u] ?: continue
+            val newDist = graph.getShortestDist(v) + w.toLong()
+            if (newDist < graph.getShortestDist(u)) {
+                graph.shortestDistToVertex[u] = newDist
             }
         }
     }
-    graph.saveDist(start)
 }
-
