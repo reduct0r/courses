@@ -2,7 +2,7 @@ package sprint6_fb
 
 import java.util.Stack
 
-// https://contest.yandex.ru/contest/25070/run-report/152978272/
+// https://contest.yandex.ru/contest/25070/run-report/154168902/
 
 /**
 -- ПРИНЦИП РАБОТЫ --
@@ -32,50 +32,46 @@ import java.util.Stack
  */
 
 class Graph(
-    val numOfVertex: Int,
     val n: Int,
     val m: Int,
-    val input: String
+    val grid: Array<CharArray>
 ) {
+    val numOfVertex = n * m
     val visited = BooleanArray(numOfVertex) { false }
+
+    private val directions = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
 
     fun getOutboundFrom(v: Int): List<Int> {
         val i = v / m
         val j = v % m
-        val directions = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
         val neighbors = mutableListOf<Int>()
-
         for ((di, dj) in directions) {
             val ni = i + di
             val nj = j + dj
-            if (ni in 0 until n && nj in 0 until m && input[ni * m + nj] == '#') {
+            if (ni in 0 until n && nj in 0 until m && grid[ni][nj] == '#' && !visited[ni * m + nj]) {
                 neighbors.add(ni * m + nj)
             }
         }
         return neighbors
     }
+
+    operator fun get(v: Int): Boolean = !visited[v] && grid[v / m][v % m] == '#'
 }
 
 fun main() {
     val reader = System.`in`.bufferedReader()
     val (n, m) = reader.readLine().split(" ").map { it.toInt() }
-    val input = buildString {
-        repeat(n) {
-            append(reader.readLine())
-        }
-    }
-    val graph = Graph(n * m, n, m, input)
-
-    val res = findComponents(graph)
-    println("${res.first} ${res.second}")
+    val grid = Array(n) { reader.readLine().toCharArray() }
+    val graph = Graph(n, m, grid)
+    val (numComponents, maxWeight) = findComponents(graph)
+    println("$numComponents $maxWeight")
 }
 
 fun findComponents(graph: Graph): Pair<Int, Int> {
     var numComponents = 0
     var maxWeight = 0
-
     for (v in 0 until graph.numOfVertex) {
-        if (!graph.visited[v] && graph.input[v / graph.m * graph.m + v % graph.m] == '#') {
+        if (graph[v]) {
             numComponents++
             val componentWeight = dfs(graph, v)
             maxWeight = maxOf(maxWeight, componentWeight)
@@ -89,7 +85,6 @@ fun dfs(graph: Graph, start: Int): Int {
     stack.push(start)
     graph.visited[start] = true
     var size = 1
-
     while (!stack.isEmpty()) {
         val v = stack.pop()
         for (out in graph.getOutboundFrom(v)) {
