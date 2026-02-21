@@ -1,6 +1,6 @@
 package sprint8_
 
-// https://contest.yandex.ru/contest/26133/run-report/157364135/
+// https://contest.yandex.ru/contest/26133/run-report/157365376/
 
 /**
 -- ПРИНЦИП РАБОТЫ --
@@ -80,8 +80,11 @@ DP: в худшем случае O(|T| * L),
     Итого O(∑L_i + |T|)
  */
 
+const val ALPHABET_POWER = 26
+const val FIRST_ALPHABET_LETTER = 'a'
+
 class TrieNode {
-    val children: Array<TrieNode?> = Array(26) { null }
+    val children: Array<TrieNode?> = Array(ALPHABET_POWER) { null }
     var isEnd: Boolean = false
 }
 
@@ -91,7 +94,7 @@ class Trie {
     fun add(str: String) {
         var curr = root
         for (c in str) {
-            val index = c - 'a'
+            val index = c - FIRST_ALPHABET_LETTER
             if (curr.children[index] == null) {
                 curr.children[index] = TrieNode()
             }
@@ -111,7 +114,7 @@ fun canSplitByWords(text: String, trie: Trie): Boolean {
 
         var curr = trie.root
         for (j in i until n) {
-            val index = text[j] - 'a'
+            val index = text[j] - FIRST_ALPHABET_LETTER
             val nextNode = curr.children[index] ?: break
 
             curr = nextNode
