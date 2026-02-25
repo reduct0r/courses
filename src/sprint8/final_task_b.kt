@@ -1,6 +1,6 @@
 package sprint8_
 
-// https://contest.yandex.ru/contest/26133/run-report/157365376/
+// https://contest.yandex.ru/contest/26133/run-report/157621610/
 
 /**
 -- ПРИНЦИП РАБОТЫ --
@@ -26,7 +26,8 @@ package sprint8_
     3. Каков переход?
     Для каждой позиции i, где dp[i] == true, мы начинаем обход Trie из корня и идём по тексту дальше (j = i, i+1, …).
     Как только текущий узел Trie имеет isEnd == true, это значит, что substring(i..j) - допустимое слово,
-    поэтому мы устанавливаем dp[j + 1] = true.
+    поэтому мы устанавливаем dp[j + 1] = true. Это корректно, потому что: dp[i] гарантирует, что префикс [0..i) уже разбит,
+    substring(i..j) - слово из словаря => префикс [0..j+1) = (префикс до i) + слово тоже можно разбить
     Переход учитывает все возможные разбиения, потому что мы рассматриваем все позиции начала нового слова
     и все возможные окончания слова из словаря.
     
@@ -64,27 +65,25 @@ package sprint8_
 Алгоритм учитывает повторное использование слов и любой порядок.
 
 -- ВРЕМЕННАЯ СЛОЖНОСТЬ --
-L - длина слова
+L - макс. длина слова
 |T| - длина исходного текста
+n - кол-во слов
 
-Построение Trie: O(∑L_i)
+Построение Trie: O(n * L)
 DP: в худшем случае O(|T| * L),
     для каждой позиции i (0..|T|) мы запускаем проход по Trie,
     но максимальная глубина любого пути в Trie равна L,
     поэтому внутренний цикл выполняется не более L раз для каждой i.
-Итого O(|T| * L)
+Итого O((n + |T|) * L) = O(|T| * L)
 
 -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
-    Trie: O(∑L_i)
+    Trie: O(n * L)
     Массив dp: O(|T|)
-    Итого O(∑L_i + |T|)
+    Итого O(n * L + |T|)
  */
 
-const val ALPHABET_POWER = 26
-const val FIRST_ALPHABET_LETTER = 'a'
-
 class TrieNode {
-    val children: Array<TrieNode?> = Array(ALPHABET_POWER) { null }
+    val children: MutableMap<Char, TrieNode> = mutableMapOf()
     var isEnd: Boolean = false
 }
 
@@ -94,11 +93,7 @@ class Trie {
     fun add(str: String) {
         var curr = root
         for (c in str) {
-            val index = c - FIRST_ALPHABET_LETTER
-            if (curr.children[index] == null) {
-                curr.children[index] = TrieNode()
-            }
-            curr = curr.children[index]!!
+            curr = curr.children.getOrPut(c) { TrieNode() }
         }
         curr.isEnd = true
     }
@@ -114,13 +109,11 @@ fun canSplitByWords(text: String, trie: Trie): Boolean {
 
         var curr = trie.root
         for (j in i until n) {
-            val index = text[j] - FIRST_ALPHABET_LETTER
-            val nextNode = curr.children[index] ?: break
+            val nextNode = curr.children[text[j]] ?: break
 
             curr = nextNode
             if (curr.isEnd) {
                 dp[j + 1] = true
-                if (j + 1 == n) return true
             }
         }
         if (dp[n]) return true
