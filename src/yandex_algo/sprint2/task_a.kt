@@ -1,6 +1,5 @@
 package yandex_algo.sprint2
 
-import sprint1.emptyEl
 import java.util.StringTokenizer
 
 fun transpose(list: MutableList<Int>, n: Int, m: Int): List<Int> {
